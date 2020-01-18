@@ -1,7 +1,9 @@
 package server
 
 import (
+	"bytes"
 	"fmt"
+	"log"
 
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/ssh"
@@ -18,13 +20,11 @@ func NewSSH(host, port, user, password string) (*SSHServer, error) {
 	connStr := fmt.Sprintf("%v:%v", host, port)
 
 	config := &ssh.ClientConfig{
-		Config: ssh.Config{},
 		User:   user,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
 		HostKeyCallback: ssh.FixedHostKey(hostKey),
-		Timeout:         1000,
 	}
 
 	sshClient, err := ssh.Dial("tcp", connStr, config)
@@ -37,12 +37,32 @@ func NewSSH(host, port, user, password string) (*SSHServer, error) {
 		return nil, errors.Wrap(err, "ssh client session")
 	}
 
+	var b bytes.Buffer
+	session.Stdout = &b
+	if err := session.Run("/usr/bin/whoami"); err != nil {
+		log.Fatal("Failed to run: " + err.Error())
+	}
+	fmt.Println(b.String())
+
 	return &SSHServer{
 		session: session,
 		client:  sshClient,
 	}, nil
 }
 
+type Conn interface {
+	Close() error
+}
+
 func (s *SSHServer) Close() error {
-	return s.client.Close()
+	var err error
+	err = s.client.Close()
+	if err != nil {
+		return err
+	}
+	err = s.session.Close()
+	if err != nil {
+		return err
+	}
+	return err
 }

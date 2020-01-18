@@ -21,7 +21,6 @@ var (
 
 func NewSSH(host, port, user, password string) (*SSHServer, error) {
 	connStr := fmt.Sprintf("%v:%v", host, port)
-
 	config := &ssh.ClientConfig{
 		User: user,
 		Auth: []ssh.AuthMethod{

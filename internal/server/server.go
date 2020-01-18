@@ -3,9 +3,9 @@ package server
 import (
 	"bytes"
 	"fmt"
-	"log"
 
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -14,13 +14,16 @@ type SSHServer struct {
 	client  *ssh.Client
 }
 
-var hostKey ssh.PublicKey
+var (
+	log     = logrus.New()
+	hostKey ssh.PublicKey
+)
 
 func NewSSH(host, port, user, password string) (*SSHServer, error) {
 	connStr := fmt.Sprintf("%v:%v", host, port)
 
 	config := &ssh.ClientConfig{
-		User:   user,
+		User: user,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(password),
 		},
@@ -29,6 +32,7 @@ func NewSSH(host, port, user, password string) (*SSHServer, error) {
 
 	sshClient, err := ssh.Dial("tcp", connStr, config)
 	if err != nil {
+		log.Error(errors.Cause(err))
 		return nil, errors.Wrap(err, "ssh dial tcp")
 	}
 

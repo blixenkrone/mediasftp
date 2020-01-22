@@ -10,23 +10,28 @@ import (
 // Its a implementation of SFTP protocol for an existing SSH server
 var log = logrus.New()
 
-
 type SFTP struct {
 	ftp *sftp.Client
 }
 
-func Connection(client *ssh.Client, connStr string) (*SFTP, error) {
-	log.Infof("connecting to: %s", connStr)
+func SFTPConnection(client *ssh.Client) (*SFTP, error) {
+	log.Infof("connecting to: %s", client.LocalAddr().String())
 	c, err := sftp.NewClient(client)
 	if err != nil {
 		return nil, errors.Wrap(err, "sftp client")
 	}
-
 	return &SFTP{
 		ftp: c,
 	}, nil
 }
 
+func (s *SFTP) Ping() {
+	s.getPWD()
+	s.ftp.Lock()
+	defer s.ftp.Unlock()
+	log.Info("PONG!")
+
+}
 func (s *SFTP) Create() {
 	s.getPWD()
 
